@@ -27,6 +27,8 @@ from datetime import datetime, date
 from urllib.parse import urlencode, quote
 from urllib.request import urlopen, Request
 
+import i18n  # first-party page-chrome translations (data only, no third-party)
+
 try:
     from zoneinfo import ZoneInfo
     TZ = ZoneInfo("America/Anchorage")
@@ -37,14 +39,17 @@ except Exception:  # pragma: no cover
 # CONFIG
 # --------------------------------------------------------------------------
 
-# IMPORTANT: confirm the current-season service name before going live.
-# 2023 and 2024 are verified; the 2026 season is almost certainly the name
-# below. To check: browse the org's directory and look for the newest
-#   Summer_Meal_Site_Finder_<year>_WFL1
-# at https://services1.arcgis.com/RLQu0rK7h4kbsBq5/arcgis/rest/services
+# IMPORTANT: confirm the current-season service before going live.
+# Verified live on 2026-06-03 by listing the org's service directory
+#   https://services1.arcgis.com/RLQu0rK7h4kbsBq5/arcgis/rest/services
+# The older "Summer_Meal_Site_Finder_<year>_WFL1" naming was dropped; the only
+# service carrying real, Season=2026 Alaska data is the one below. Its name
+# still says "(Testing)" on USDA's side -- see README/CLAUDE.md for the open
+# question. Because this is read from the SERVICE_URL repo variable, swapping
+# to a renamed production endpoint later is a one-line change (no code edit).
 SERVICE_URL = os.environ.get("SERVICE_URL") or (
     "https://services1.arcgis.com/RLQu0rK7h4kbsBq5/arcgis/rest/services/"
-    "Summer_Meal_Site_Finder_2026_WFL1/FeatureServer/0/query"
+    "Summer_Meals_Site_Finder_2026_(Testing)/FeatureServer/0/query"
 )
 
 OUT_DIR = os.environ.get("OUT_DIR", "docs")
@@ -56,30 +61,81 @@ SCOPE_CITIES = {
     "anchorage", "eagle river", "chugiak", "girdwood", "indian",
     "bird creek", "peters creek", "jber",
     "joint base elmendorf-richardson", "elmendorf", "fort richardson",
+    # Misspellings seen in the live feed (city is hand-entered). Keep these so
+    # real Anchorage sites aren't silently dropped from scope.
+    "anchroage", "anchorage ", "ancorage",
+}
+
+# Correct obvious city typos for DISPLAY only (the feed is hand-entered). Scope
+# matching tolerates these regardless via the entries above.
+CITY_FIXES = {
+    "anchroage": "Anchorage",
+    "ancorage": "Anchorage",
+    "anchorage ": "Anchorage",
 }
 
 OFFICIAL_FINDER = "https://www.fns.usda.gov/sfsp/sitefinder"
 STATE_AGENCY = "https://education.alaska.gov/cnp"  # AK Child Nutrition Programs
 HUNGER_HOTLINE = "1-866-348-6479"
 
-OUTFIELDS = ",".join([
+# Public canonical origin (the custom domain set via docs/CNAME). Used for
+# canonical/hreflang/Open Graph absolute URLs. Override with SITE_URL env if the
+# domain changes.
+SITE_URL = os.environ.get("SITE_URL", "https://summermeals.codeforanchorage.org")
+REPO_URL = "https://github.com/codeforanchorage/summer-meals-anchorage"
+ISSUES_URL = REPO_URL + "/issues"
+
+# og:locale values per page language (best-effort region pairing).
+OG_LOCALE = {"en": "en_US", "es": "es_US", "hmn": "hmn",
+             "sm": "sm_WS", "tl": "tl_PH"}
+
+# Fields we want, all site-level and safe. We deliberately do NOT request the
+# personal contact name/phone columns (Contact_First_Name, Contact_Last_Name,
+# Contact_Phone, Ext) so PII never enters the build.
+#
+# The fetch intersects this list with the fields the live layer actually
+# exposes, because ArcGIS returns ZERO features if you ask for a field that
+# does not exist. Meal-time and season-date columns have drifted between
+# seasons (e.g. "Lunch_Time" vs "Lunch_Time2", "StartDateText" vs the epoch
+# "Start_date"), so we request every known variant and let normalize() pick the
+# first populated one.
+DESIRED_FIELDS = [
     "Site_Name", "Site_Address1", "Site_Address2", "Site_City", "Site_State",
     "Site_Zip", "Site_Phone", "Sponsoring_Organization", "Service_Model",
-    "Days_of_operation", "Breakfast_Time", "Lunch_Time", "Snack_Time_AM",
-    "Snack_Time_PM", "Dinner_Supper_Time", "StartDateText", "EndDateText",
-    "End_date", "Comments", "RecordStatus", "Site_Location",
-])
+    "Site_Type", "Days_of_operation", "Comments", "RecordStatus",
+    "Site_Location",
+    "Breakfast_Time", "Lunch_Time", "Snack_Time_AM", "Snack_Time_PM",
+    "Dinner_Supper_Time",
+    "Breakfast_Time2", "Lunch_Time2", "Snack_Time_AM2", "Snack_Time_PM2",
+    "Dinner_Supper_Time2",
+    "StartDateText", "EndDateText", "Start_date", "End_date",
+]
 
+# Each meal: a display label plus the candidate field names to try, in order.
 MEAL_FIELDS = [
-    ("Breakfast_Time", "Breakfast"),
-    ("Lunch_Time", "Lunch"),
-    ("Snack_Time_AM", "Morning snack"),
-    ("Snack_Time_PM", "Afternoon snack"),
-    ("Dinner_Supper_Time", "Dinner"),
+    (("Breakfast_Time", "Breakfast_Time2"), "Breakfast"),
+    (("Lunch_Time", "Lunch_Time2"), "Lunch"),
+    (("Snack_Time_AM", "Snack_Time_AM2"), "Morning snack"),
+    (("Snack_Time_PM", "Snack_Time_PM2"), "Afternoon snack"),
+    (("Dinner_Supper_Time", "Dinner_Supper_Time2"), "Dinner"),
 ]
 
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday",
              "Friday", "Saturday", "Sunday"]
+DAY_ABBR = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+# Compact day codes used by the live feed, e.g. "M,T,W,TH,F" or "SA".
+# Order of checking matters when these are matched as whole comma-separated
+# tokens: "TH" is Thursday (not Tuesday), "SA"/"SU" are the weekend.
+DAY_CODES = {
+    "m": 0, "mo": 0,
+    "t": 1, "tu": 1,
+    "w": 2, "we": 2,
+    "th": 3, "r": 3,
+    "f": 4,
+    "sa": 5,
+    "su": 6,
+}
 
 ABBR = {
     "monday": 0, "mon": 0,
@@ -97,6 +153,27 @@ _DAYWORD = (r"monday|tuesday|wednesday|thursday|friday|saturday|sunday"
 # DATA FETCH
 # --------------------------------------------------------------------------
 
+UA = {"User-Agent": "anchorage-summer-meals/1.0"}
+
+
+def _get_json(url):
+    req = Request(url, headers=UA)
+    with urlopen(req, timeout=60) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    if isinstance(data, dict) and "error" in data:
+        raise RuntimeError(f"ArcGIS error: {data['error']}")
+    return data
+
+
+def available_fields():
+    """Field names the live layer exposes (the layer URL is SERVICE_URL minus
+    the trailing '/query'). Used to avoid requesting a field that doesn't exist
+    -- ArcGIS returns zero features if any requested outField is unknown."""
+    layer_url = re.sub(r"/query/?$", "", SERVICE_URL)
+    meta = _get_json(layer_url + "?f=json")
+    return {f["name"] for f in meta.get("fields", [])}
+
+
 def fetch_records():
     """Return a list of attribute dicts, paging through transfer limits."""
     mock = os.environ.get("MOCK_DATA")
@@ -105,9 +182,16 @@ def fetch_records():
             payload = json.load(fh)
         return [f["attributes"] for f in payload.get("features", [])]
 
+    have = available_fields()
+    fields = [f for f in DESIRED_FIELDS if f in have]
+    if "Site_State" not in have or "Site_City" not in have:
+        raise RuntimeError(
+            "Service is missing expected fields (Site_State/Site_City). "
+            f"Got: {sorted(have)[:20]}... -- check SERVICE_URL.")
+
     base = {
         "where": "Site_State='AK'",
-        "outFields": OUTFIELDS,
+        "outFields": ",".join(fields),
         "returnGeometry": "false",
         "orderByFields": "Site_Name",
         "resultRecordCount": "2000",
@@ -116,12 +200,7 @@ def fetch_records():
     out, offset = [], 0
     while True:
         params = dict(base, resultOffset=str(offset))
-        url = SERVICE_URL + "?" + urlencode(params)
-        req = Request(url, headers={"User-Agent": "anchorage-summer-meals/1.0"})
-        with urlopen(req, timeout=60) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        if "error" in data:
-            raise RuntimeError(f"ArcGIS error: {data['error']}")
+        data = _get_json(SERVICE_URL + "?" + urlencode(params))
         feats = data.get("features", [])
         out.extend(f["attributes"] for f in feats)
         if data.get("exceededTransferLimit") and feats:
@@ -168,20 +247,59 @@ def parse_days(text):
         result.update({0, 2, 4})
     if re.search(r"\b(tth|t/th|t-th)\b", t):
         result.update({1, 3})
+    # Compact comma/slash-separated letter codes: "M,T,W,TH,F", "SA", "M/W/F".
+    # Only whole tokens are matched (split on separators) so day words handled
+    # above aren't double-counted and stray letters in prose can't leak in.
+    for tok in re.split(r"[,/;|]+", t):
+        tok = tok.strip().strip(".").replace(" ", "")
+        if tok in DAY_CODES:
+            result.add(DAY_CODES[tok])
     return result
+
+
+def format_days(days, raw, abbr=DAY_ABBR):
+    """Human-readable day list from a parsed set, collapsing runs into ranges
+    like 'Mon–Fri'. Falls back to the raw feed text if nothing parsed.
+    `abbr` is the 7-long list of weekday abbreviations (localizable)."""
+    if not days:
+        return raw
+    idxs = sorted(days)
+    runs, start, prev = [], idxs[0], idxs[0]
+    for i in idxs[1:]:
+        if i == prev + 1:
+            prev = i
+            continue
+        runs.append((start, prev))
+        start = prev = i
+    runs.append((start, prev))
+    parts = []
+    for a, b in runs:
+        if a == b:
+            parts.append(abbr[a])
+        elif b == a + 1:
+            parts.append(abbr[a])
+            parts.append(abbr[b])
+        else:
+            parts.append(f"{abbr[a]}–{abbr[b]}")
+    return ", ".join(parts)
 
 
 def parse_text_date(s, today):
     if not s:
         return None
     s = s.strip()
-    for fmt in ("%m/%d/%Y", "%m/%d/%y", "%B %d, %Y", "%b %d, %Y",
-                "%B %d %Y", "%b %d %Y", "%m-%d-%Y", "%Y-%m-%d", "%m/%d"):
+    # Bare "M/D" with no year: attach the current year explicitly (avoids the
+    # ambiguous-default-year deprecation in Python 3.14+).
+    m = re.fullmatch(r"(\d{1,2})/(\d{1,2})", s)
+    if m:
         try:
-            d = datetime.strptime(s, fmt)
-            if fmt == "%m/%d":
-                d = d.replace(year=today.year)
-            return d.date()
+            return date(today.year, int(m.group(1)), int(m.group(2)))
+        except ValueError:
+            return None
+    for fmt in ("%m/%d/%Y", "%m/%d/%y", "%B %d, %Y", "%b %d, %Y",
+                "%B %d %Y", "%b %d %Y", "%m-%d-%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s, fmt).date()
         except ValueError:
             continue
     return None
@@ -208,8 +326,57 @@ def clean(s):
 # RECORD NORMALIZATION
 # --------------------------------------------------------------------------
 
+def fmt_date(d):
+    """Short, locale-independent date text (e.g. 'Jun 2'). Year omitted."""
+    return f"{d:%b} {d.day}" if d else ""
+
+
+def model_info(raw_model):
+    """Map a Service_Model value to (display_label, css_class).
+
+    The live feed uses 'CONGREGATE' / 'NON-CONGREGATE PICK UP'; older sample
+    data uses 'Eat On-Site' / 'Meals To Go'. We normalize both to friendly,
+    plain-language labels and a tag class. Empty -> ("", "")."""
+    m = clean(raw_model)
+    if not m:
+        return "", ""
+    low = m.lower()
+    # Check to-go first: "NON-CONGREGATE" contains the substring "congregate".
+    if any(k in low for k in ("non-congregate", "non congregate", "to go",
+                              "to-go", "pick up", "pick-up", "pickup", "grab")):
+        return "Grab & go / pick-up", "togo"
+    if any(k in low for k in ("congregate", "on-site", "on site", "eat")):
+        return "Eat on-site", "onsite"
+    return m, "onsite"
+
+
+def first_value(raw, fields):
+    """First non-empty cleaned value among candidate field names."""
+    for f in fields:
+        v = clean(raw.get(f))
+        if v:
+            return v
+    return ""
+
+
 def normalize(raw, today):
     city = clean(raw.get("Site_City"))
+    city = CITY_FIXES.get(city.lower(), city)
+    model_label, model_cls = model_info(clean(raw.get("Service_Model")))
+    days_raw = clean(raw.get("Days_of_operation"))
+    days = parse_days(days_raw)
+
+    start_text = clean(raw.get("StartDateText"))
+    end_text = clean(raw.get("EndDateText"))
+    start_date = (parse_text_date(start_text, today)
+                  or parse_epoch_date(raw.get("Start_date")))
+    end_date = (parse_epoch_date(raw.get("End_date"))
+                or parse_text_date(end_text, today))
+    if not start_text and start_date:
+        start_text = fmt_date(start_date)
+    if not end_text and end_date:
+        end_text = fmt_date(end_date)
+
     rec = {
         "name": clean(raw.get("Site_Name")) or "Summer meal site",
         "addr1": clean(raw.get("Site_Address1")),
@@ -218,19 +385,24 @@ def normalize(raw, today):
         "zip": clean(raw.get("Site_Zip")),
         "phone": clean(raw.get("Site_Phone")),
         "sponsor": clean(raw.get("Sponsoring_Organization")),
-        "model": clean(raw.get("Service_Model")),
-        "days_raw": clean(raw.get("Days_of_operation")),
+        "model": model_label,
+        "model_class": model_cls,
+        "days_raw": days_raw,
+        "days_display": format_days(days, days_raw),
         "comments": clean(raw.get("Comments")),
-        "location_note": clean(raw.get("Site_Location")),
-        "start_text": clean(raw.get("StartDateText")),
-        "end_text": clean(raw.get("EndDateText")),
+        # Site_Location is usually a generic enum ("Fixed"/"Mobile") that just
+        # duplicates the model tag -- only surface it when it's a real note.
+        "location_note": ("" if clean(raw.get("Site_Location")).lower()
+                          in {"fixed", "mobile", "stationary"}
+                          else clean(raw.get("Site_Location"))),
+        "start_text": start_text,
+        "end_text": end_text,
     }
-    rec["meals"] = [(label, clean(raw.get(f)))
-                    for f, label in MEAL_FIELDS if clean(raw.get(f))]
-    rec["days"] = parse_days(rec["days_raw"])
-    rec["start_date"] = parse_text_date(rec["start_text"], today)
-    rec["end_date"] = (parse_epoch_date(raw.get("End_date"))
-                       or parse_text_date(rec["end_text"], today))
+    rec["meals"] = [(lbl, first_value(raw, fields))
+                    for fields, lbl in MEAL_FIELDS if first_value(raw, fields)]
+    rec["days"] = days
+    rec["start_date"] = start_date
+    rec["end_date"] = end_date
     return rec
 
 
@@ -256,6 +428,12 @@ esc = html.escape
 def maps_url(rec):
     q = ", ".join(p for p in [rec["addr1"], rec["city"], "AK", rec["zip"]] if p)
     return "https://www.google.com/maps/search/?api=1&query=" + quote(q)
+
+
+def nbsp_phone(s):
+    """Keep a phone number from wrapping mid-number: non-breaking spaces and
+    non-breaking hyphens for the *visible* text only (the tel: href is plain)."""
+    return (s or "").replace("-", "‑").replace(" ", " ")
 
 
 def tel_link(phone):
@@ -361,36 +539,56 @@ footer{margin-top:40px; border-top:1px solid var(--line); padding-top:20px;
 footer a{color:var(--primary-ink)}
 footer p{margin:8px 0}
 
+.langbar{display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+  padding:14px 0 2px; font-size:.9rem}
+.langbar .lbl{color:var(--muted); margin-right:2px}
+.langbar a{display:inline-block; min-height:38px; line-height:1.2;
+  padding:8px 12px; border-radius:999px; border:1px solid var(--line);
+  background:#fff; text-decoration:none}
+.langbar a[aria-current="page"]{background:var(--primary); color:#fff;
+  border-color:var(--primary)}
+.review{background:var(--togo-bg); color:var(--togo-ink);
+  border:1px solid #e6c590; border-radius:10px; padding:10px 14px;
+  margin:14px 0 0; font-size:.92rem}
+.review a{color:var(--togo-ink); font-weight:600}
+#accessibility h2{font-size:1.2rem}
+
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.site{animation:none}}
 @media (min-width:560px){h1{font-size:2.4rem}}
 """
 
 
-def render_site(rec, level):
-    tag_cls = "togo" if "to go" in rec["model"].lower() or "to-go" in rec["model"].lower() else "onsite"
-    parts = [f'<article class="site">']
+def render_site(rec, level, S):
+    """Render one site card. `S` is the active locale's string table; only the
+    chrome (labels/buttons/day + meal names) is localized -- the site's own
+    name, address, times and comments are shown verbatim as USDA provides."""
+    tag_cls = rec["model_class"] or "onsite"
+    model_label = S["models"].get(rec["model"], rec["model"])
+    days_disp = format_days(rec["days"], rec["days_raw"], S["days_abbr"])
+    parts = ['<article class="site">']
     parts.append(f'<h{level} class="name">{esc(rec["name"])}</h{level}>')
-    if rec["model"]:
-        parts.append(f'<p class="tags"><span class="tag {tag_cls}">{esc(rec["model"])}</span></p>')
+    if model_label:
+        parts.append(f'<p class="tags"><span class="tag {tag_cls}">{esc(model_label)}</span></p>')
     addr = address_line(rec)
     if addr:
         parts.append(f'<address>{esc(addr)}</address>')
     if rec["location_note"]:
         parts.append(f'<p class="row">{esc(rec["location_note"])}</p>')
-    if rec["days_raw"]:
-        parts.append(f'<p class="row"><span class="lbl">Open:</span> {esc(rec["days_raw"])}</p>')
+    if days_disp:
+        parts.append(f'<p class="row"><span class="lbl">{esc(S["open_label"])}</span> {esc(days_disp)}</p>')
     if rec["meals"]:
-        items = "".join(f'<li>{esc(lbl)}: {esc(val)}</li>' for lbl, val in rec["meals"])
+        items = "".join(f'<li>{esc(S["meals"].get(lbl, lbl))}: {esc(val)}</li>'
+                        for lbl, val in rec["meals"])
         parts.append(f'<ul class="meals">{items}</ul>')
     if rec["start_text"] or rec["end_text"]:
         span = " \u2013 ".join(x for x in [rec["start_text"], rec["end_text"]] if x)
-        parts.append(f'<p class="row"><span class="lbl">Dates:</span> {esc(span)}</p>')
+        parts.append(f'<p class="row"><span class="lbl">{esc(S["dates_label"])}</span> {esc(span)}</p>')
     actions = []
     if digits(rec["phone"]):
-        actions.append(f'<a class="btn call" href="tel:{esc(tel_link(rec["phone"]))}">Call {esc(rec["phone"])}</a>')
+        actions.append(f'<a class="btn call" href="tel:{esc(tel_link(rec["phone"]))}">{esc(S["call"])} {esc(nbsp_phone(rec["phone"]))}</a>')
     if addr:
-        actions.append(f'<a class="btn map" href="{esc(maps_url(rec))}">Directions</a>')
+        actions.append(f'<a class="btn map" href="{esc(maps_url(rec))}">{esc(S["directions"])}</a>')
     if actions:
         parts.append(f'<p class="actions">{"".join(actions)}</p>')
     if rec["comments"]:
@@ -399,94 +597,155 @@ def render_site(rec, level):
     return "".join(parts)
 
 
-def render_html(today, today_idx, today_sites, by_day, varies, upcoming, stamp):
-    weekday = DAY_NAMES[today_idx]
+def page_path(code):
+    """Site-root-relative path for a locale page ('/' for English)."""
+    return "/" if code == "en" else f"/{code}/"
+
+
+def render_langbar(locales, active_code, S):
+    parts = [f'<nav class="langbar" aria-label="{esc(S["lang_label"])}">']
+    parts.append(f'<span class="lbl">{esc(S["lang_label"])}:</span>')
+    for loc in locales:
+        cur = ' aria-current="page"' if loc["code"] == active_code else ""
+        parts.append(
+            f'<a href="{page_path(loc["code"])}" lang="{loc["code"]}" '
+            f'hreflang="{loc["code"]}"{cur}>{esc(loc["name"])}</a>')
+    parts.append("</nav>")
+    return "".join(parts)
+
+
+def render_head_meta(S, active_code, locales):
+    """Icons, canonical/hreflang alternates, and Open Graph / Twitter cards."""
+    here = SITE_URL + page_path(active_code)
+    og_img = SITE_URL + "/og-image.png"
+    m = []
+    m.append('<link rel="icon" href="/favicon.svg" type="image/svg+xml">')
+    m.append('<link rel="icon" href="/favicon.ico" sizes="32x32">')
+    m.append('<link rel="apple-touch-icon" href="/apple-touch-icon.png">')
+    m.append('<link rel="manifest" href="/site.webmanifest">')
+    m.append(f'<link rel="canonical" href="{esc(here)}">')
+    for loc in locales:
+        alt = SITE_URL + page_path(loc["code"])
+        m.append(f'<link rel="alternate" hreflang="{loc["code"]}" href="{esc(alt)}">')
+    m.append(f'<link rel="alternate" hreflang="x-default" href="{esc(SITE_URL)}/">')
+    m.append('<meta property="og:type" content="website">')
+    m.append('<meta property="og:site_name" content="Anchorage Summer Meals">')
+    m.append(f'<meta property="og:title" content="{esc(S["title"])}">')
+    m.append(f'<meta property="og:description" content="{esc(S["sub"])}">')
+    m.append(f'<meta property="og:url" content="{esc(here)}">')
+    m.append(f'<meta property="og:image" content="{esc(og_img)}">')
+    m.append('<meta property="og:image:width" content="1200">')
+    m.append('<meta property="og:image:height" content="630">')
+    m.append(f'<meta property="og:image:alt" content="{esc(S["title"])}">')
+    m.append(f'<meta property="og:locale" content="{OG_LOCALE.get(active_code, "en_US")}">')
+    m.append('<meta name="twitter:card" content="summary_large_image">')
+    m.append(f'<meta name="twitter:title" content="{esc(S["title"])}">')
+    m.append(f'<meta name="twitter:description" content="{esc(S["sub"])}">')
+    m.append(f'<meta name="twitter:image" content="{esc(og_img)}">')
+    return "".join(m)
+
+
+def render_html(S, locales, active_code, today_idx, today_sites,
+                by_day, varies, upcoming, stamp):
+    weekday = S["days"][today_idx]
     out = []
-    out.append('<!doctype html><html lang="en"><head>')
+    out.append(f'<!DOCTYPE html><html lang="{S["html_lang"]}"><head>')
     out.append('<meta charset="utf-8">')
     out.append('<meta name="viewport" content="width=device-width, initial-scale=1">')
     out.append('<meta name="theme-color" content="#0b6b7a">')
-    out.append('<meta name="description" content="Free summer meals for kids 18 and under in Anchorage, Alaska. See sites open today and all week.">')
-    out.append('<title>Free Summer Meals in Anchorage</title>')
+    out.append(f'<meta name="description" content="{esc(S["meta_desc"])}">')
+    out.append(f'<title>{esc(S["title"])}</title>')
+    out.append(render_head_meta(S, active_code, locales))
     out.append(f'<style>{CSS}</style>')
     out.append('</head><body><div class="wrap">')
-    out.append('<a class="skip" href="#today">Skip to today\u2019s meals</a>')
+    out.append(f'<a class="skip" href="#today">{esc(S["skip"])}</a>')
 
     out.append('<header>')
-    out.append('<h1>Free Summer Meals in Anchorage</h1>')
-    out.append('<p class="sub">Free breakfast, lunch, and snacks for anyone 18 and under. '
-               'No sign-up, no ID, and no cost.</p>')
+    out.append(render_langbar(locales, active_code, S))
+    if S["review_note"]:
+        out.append(f'<p class="review" role="note">{esc(S["review_note"])} '
+                   f'<a href="/" lang="en" hreflang="en">English</a></p>')
+    out.append(f'<h1>{esc(S["h1"])}</h1>')
+    out.append(f'<p class="sub">{esc(S["sub"])}</p>')
     open_n = len(today_sites)
-    out.append(f'<p class="updated">Updated {esc(stamp)} \u00b7 '
-               f'<strong>{open_n} site{"s" if open_n != 1 else ""} open today</strong></p>')
+    count = (S["open_today_one"] if open_n == 1
+             else S["open_today_many"]).format(n=open_n)
+    out.append(f'<p class="updated">{esc(S["updated"])} {esc(stamp)} \u00b7 '
+               f'<strong>{esc(count)}</strong></p>')
     out.append('</header><main>')
 
     # TODAY
     out.append('<section id="today" aria-labelledby="today-h">')
-    out.append(f'<h2 id="today-h">Open today \u2014 {weekday}</h2>')
+    out.append(f'<h2 id="today-h">{esc(S["today_h"])} \u2014 {esc(weekday)}</h2>')
     if today_sites:
-        out.append(f'<p class="section-note">{len(today_sites)} location'
-                   f'{"s" if len(today_sites)!=1 else ""} serving meals today.</p>')
+        note = (S["today_note_one"] if len(today_sites) == 1
+                else S["today_note_many"]).format(n=len(today_sites))
+        out.append(f'<p class="section-note">{esc(note)}</p>')
         for r in today_sites:
-            out.append(render_site(r, 3))
+            out.append(render_site(r, 3, S))
     else:
-        out.append('<div class="empty">No sites are listed as open today. '
-                   'Check the full week below, or some sites may not have reported '
-                   'their hours yet.</div>')
+        out.append(f'<div class="empty">{esc(S["today_empty"])}</div>')
     out.append('</section>')
 
     # FULL WEEK
     out.append('<section id="week" aria-labelledby="week-h">')
-    out.append('<h2 id="week-h">Full week</h2>')
-    out.append('<p class="section-note">All Anchorage sites, grouped by the days they serve.</p>')
+    out.append(f'<h2 id="week-h">{esc(S["week_h"])}</h2>')
+    out.append(f'<p class="section-note">{esc(S["week_note"])}</p>')
     any_week = False
-    for i, dname in enumerate(DAY_NAMES):
+    for i in range(7):
         sites = by_day[i]
         if not sites:
             continue
         any_week = True
-        out.append(f'<h3 class="day">{dname}</h3>')
+        out.append(f'<h3 class="day">{esc(S["days"][i])}</h3>')
         for r in sites:
-            out.append(render_site(r, 4))
+            out.append(render_site(r, 4, S))
     if not any_week:
-        out.append('<div class="empty">No weekly schedules are available right now.</div>')
+        out.append(f'<div class="empty">{esc(S["week_empty"])}</div>')
     out.append('</section>')
 
     # DAYS VARY
     if varies:
         out.append('<section id="varies" aria-labelledby="varies-h">')
-        out.append('<h2 id="varies-h">Other sites (call for days)</h2>')
-        out.append('<p class="section-note">These sites are active but didn\u2019t list '
-                   'clear weekly days \u2014 check the note or call to confirm.</p>')
+        out.append(f'<h2 id="varies-h">{esc(S["varies_h"])}</h2>')
+        out.append(f'<p class="section-note">{esc(S["varies_note"])}</p>')
         for r in varies:
-            out.append(render_site(r, 3))
+            out.append(render_site(r, 3, S))
         out.append('</section>')
 
     # UPCOMING
     if upcoming:
         out.append('<section id="soon" aria-labelledby="soon-h">')
-        out.append('<h2 id="soon-h">Opening soon</h2>')
+        out.append(f'<h2 id="soon-h">{esc(S["soon_h"])}</h2>')
         items = "".join(
             f'<li>{esc(r["name"])}'
-            + (f' \u2014 starts {esc(r["start_text"])}' if r["start_text"] else "")
+            + (f' \u2014 {esc(S["soon_starts"])} {esc(r["start_text"])}'
+               if r["start_text"] else "")
             + '</li>' for r in upcoming)
         out.append(f'<ul>{items}</ul>')
         out.append('</section>')
+
+    # ACCESSIBILITY STATEMENT
+    out.append('<section id="accessibility" aria-labelledby="a11y-h">')
+    out.append(f'<h2 id="a11y-h">{esc(S["a11y_h"])}</h2>')
+    out.append(f'<p class="section-note">{esc(S["a11y_text"])} '
+               f'<a href="{ISSUES_URL}">'
+               'github.com/codeforanchorage/summer-meals-anchorage</a></p>')
+    out.append('</section>')
 
     out.append('</main>')
 
     # FOOTER
     out.append('<footer>')
-    out.append('<p><strong>Always good to double-check.</strong> Sites are added and '
-               'updated through the summer, and hours can change. This page is rebuilt '
-               'automatically from the USDA data feed.</p>')
-    out.append(f'<p>Official map: <a href="{OFFICIAL_FINDER}">USDA Summer Meals Site Finder</a>. '
-               f'Report a wrong listing to the <a href="{STATE_AGENCY}">Alaska Child Nutrition Programs</a>.</p>')
-    out.append(f'<p>Need more help? Call the USDA National Hunger Hotline at '
-               f'<a href="tel:+1{digits(HUNGER_HOTLINE)}">{HUNGER_HOTLINE}</a> '
-               '(Mon\u2013Fri, 7 a.m.\u20137 p.m. Alaska time).</p>')
-    out.append('<p>Data source: USDA Food and Nutrition Service. This is a community-built '
-               'page and is not an official USDA website.</p>')
+    out.append(f'<p><strong>{esc(S["foot_doublecheck_strong"])}</strong> '
+               f'{esc(S["foot_doublecheck"])}</p>')
+    finder = f'<a href="{OFFICIAL_FINDER}">USDA Summer Meals Site Finder</a>'
+    agency = f'<a href="{STATE_AGENCY}">Alaska Child Nutrition Programs</a>'
+    out.append('<p>' + S["foot_official"].format(finder=finder, agency=agency) + '</p>')
+    phone = (f'<a href="tel:+1{digits(HUNGER_HOTLINE)}">'
+             f'{esc(nbsp_phone(HUNGER_HOTLINE))}</a>')
+    out.append('<p>' + S["foot_help"].format(phone=phone) + '</p>')
+    out.append(f'<p>{esc(S["foot_source"])}</p>')
     out.append('</footer>')
 
     out.append('</div></body></html>')
@@ -511,8 +770,8 @@ def render_text(today, today_idx, today_sites, by_day, varies, upcoming, stamp):
         meta = []
         if r["model"]:
             meta.append(r["model"])
-        if r["days_raw"]:
-            meta.append("Open: " + r["days_raw"])
+        if r["days_display"]:
+            meta.append("Open: " + r["days_display"])
         if meta:
             out.append(indent + " | ".join(meta))
         for lbl, val in r["meals"]:
@@ -603,11 +862,27 @@ def main():
           f"varies: {len(varies)} | upcoming: {len(upcoming)}")
 
     os.makedirs(OUT_DIR, exist_ok=True)
-    html_doc = render_html(today, today_idx, today_sites, by_day, varies, upcoming, stamp)
-    txt_doc = render_text(today, today_idx, today_sites, by_day, varies, upcoming, stamp)
 
-    with open(os.path.join(OUT_DIR, "index.html"), "w", encoding="utf-8") as fh:
-        fh.write(html_doc)
+    # One HTML page per locale: English at the root (docs/index.html), each
+    # other language under docs/<code>/index.html. Only the page chrome is
+    # localized; the listings themselves stay as USDA provides.
+    locales = i18n.LOCALES
+    for loc in locales:
+        code = loc["code"]
+        S = i18n.STRINGS[code]
+        html_doc = render_html(S, locales, code, today_idx, today_sites,
+                               by_day, varies, upcoming, stamp)
+        if code == "en":
+            dest = os.path.join(OUT_DIR, "index.html")
+        else:
+            os.makedirs(os.path.join(OUT_DIR, code), exist_ok=True)
+            dest = os.path.join(OUT_DIR, code, "index.html")
+        with open(dest, "w", encoding="utf-8") as fh:
+            fh.write(html_doc)
+
+    # Plain-text + JSON are emitted once at the root (English) -- the txt is the
+    # low-bandwidth / SMS body.
+    txt_doc = render_text(today, today_idx, today_sites, by_day, varies, upcoming, stamp)
     with open(os.path.join(OUT_DIR, "sites.txt"), "w", encoding="utf-8") as fh:
         fh.write(txt_doc)
     with open(os.path.join(OUT_DIR, "data.json"), "w", encoding="utf-8") as fh:
@@ -616,7 +891,8 @@ def main():
                    for r in active + varies], fh, indent=2, default=str)
     # Ensure GitHub Pages serves files as-is (no Jekyll processing)
     open(os.path.join(OUT_DIR, ".nojekyll"), "w").close()
-    print(f"Wrote {OUT_DIR}/index.html, sites.txt, data.json")
+    print(f"Wrote {OUT_DIR}/index.html (+ {len(locales)-1} locales), "
+          "sites.txt, data.json")
 
 
 if __name__ == "__main__":

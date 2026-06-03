@@ -1,0 +1,15 @@
+{
+  "name": "Free Summer Meals in Anchorage",
+  "short_name": "Summer Meals",
+  "description": "Free summer meals for kids 18 and under in Anchorage, Alaska.",
+  "start_url": "/",
+  "display": "browser",
+  "lang": "en",
+  "background_color": "#fbf6ee",
+  "theme_color": "#0b6b7a",
+  "icons": [
+    { "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" },
+    { "src": "/apple-touch-icon.png", "type": "image/png", "sizes": "180x180" },
+    { "src": "/icon-512.png", "type": "image/png", "sizes": "512x512" }
+  ]
+}

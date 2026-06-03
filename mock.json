@@ -90,6 +90,32 @@
       "Service_Model": "Eat On-Site", "Days_of_operation": "Mon-Fri",
       "Lunch_Time": "12:00 PM - 1:00 PM",
       "StartDateText": "6/2/2026", "EndDateText": "8/8/2026"
+    }},
+    {"attributes": {
+      "Site_Name": "Bartlett High School (2026 schema)",
+      "Site_Address1": "1101 Golden Bear Dr", "Site_City": "Anchroage",
+      "Site_State": "AK", "Site_Zip": "99504", "Site_Phone": "(907) 742-1898",
+      "Sponsoring_Organization": "Anchorage School District",
+      "Service_Model": "CONGREGATE", "Days_of_operation": "M,T,W,TH,F",
+      "Breakfast_Time2": "8:30-9:30", "Lunch_Time2": "12:30-1:30",
+      "Start_date": 1780308000000, "End_date": 1786320000000,
+      "Comments": "No meal service on June 19th."
+    }},
+    {"attributes": {
+      "Site_Name": "Muldoon Pick-Up (2026 schema, to-go)",
+      "Site_Address1": "1251 Muldoon Rd", "Site_City": "Anchorage",
+      "Site_State": "AK", "Site_Zip": "99504", "Site_Phone": "(907) 343-4223",
+      "Service_Model": "NON-CONGREGATE PICK UP", "Days_of_operation": "SA",
+      "Lunch_Time2": "11:30-1:00",
+      "Start_date": 1780308000000, "End_date": 1786320000000
+    }},
+    {"attributes": {
+      "Site_Name": "Late Cycle Elementary (2026 schema, upcoming)",
+      "Site_Address1": "4300 E 20th Ave", "Site_City": "Anchorage",
+      "Site_State": "AK", "Site_Zip": "99508",
+      "Service_Model": "CONGREGATE", "Days_of_operation": "M,T,W,TH",
+      "Lunch_Time2": "12:00-1:45",
+      "Start_date": 1784505600000, "End_date": 1786320000000
     }}
   ]
 }

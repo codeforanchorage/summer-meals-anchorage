@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Summer meals">
+  <rect width="512" height="512" rx="112" fill="#0b6b7a"/>
+  <!-- sun -->
+  <circle cx="256" cy="196" r="74" fill="#f6c453"/>
+  <g stroke="#f6c453" stroke-width="22" stroke-linecap="round">
+    <line x1="256" y1="60" x2="256" y2="92"/>
+    <line x1="148" y1="88" x2="168" y2="116"/>
+    <line x1="364" y1="88" x2="344" y2="116"/>
+    <line x1="96" y1="196" x2="128" y2="196"/>
+    <line x1="416" y1="196" x2="384" y2="196"/>
+  </g>
+  <!-- bowl -->
+  <path d="M104 300 H408 a152 152 0 0 1 -304 0 Z" fill="#ffffff"/>
+  <rect x="150" y="430" width="212" height="26" rx="13" fill="#ffffff"/>
+</svg>
