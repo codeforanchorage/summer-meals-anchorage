@@ -37,14 +37,17 @@ except Exception:  # pragma: no cover
 # CONFIG
 # --------------------------------------------------------------------------
 
-# IMPORTANT: confirm the current-season service name before going live.
-# 2023 and 2024 are verified; the 2026 season is almost certainly the name
-# below. To check: browse the org's directory and look for the newest
-#   Summer_Meal_Site_Finder_<year>_WFL1
-# at https://services1.arcgis.com/RLQu0rK7h4kbsBq5/arcgis/rest/services
+# IMPORTANT: confirm the current-season service before going live.
+# Verified live on 2026-06-03 by listing the org's service directory
+#   https://services1.arcgis.com/RLQu0rK7h4kbsBq5/arcgis/rest/services
+# The older "Summer_Meal_Site_Finder_<year>_WFL1" naming was dropped; the only
+# service carrying real, Season=2026 Alaska data is the one below. Its name
+# still says "(Testing)" on USDA's side -- see README/CLAUDE.md for the open
+# question. Because this is read from the SERVICE_URL repo variable, swapping
+# to a renamed production endpoint later is a one-line change (no code edit).
 SERVICE_URL = os.environ.get("SERVICE_URL") or (
     "https://services1.arcgis.com/RLQu0rK7h4kbsBq5/arcgis/rest/services/"
-    "Summer_Meal_Site_Finder_2026_WFL1/FeatureServer/0/query"
+    "Summer_Meals_Site_Finder_2026_(Testing)/FeatureServer/0/query"
 )
 
 OUT_DIR = os.environ.get("OUT_DIR", "docs")
@@ -56,30 +59,70 @@ SCOPE_CITIES = {
     "anchorage", "eagle river", "chugiak", "girdwood", "indian",
     "bird creek", "peters creek", "jber",
     "joint base elmendorf-richardson", "elmendorf", "fort richardson",
+    # Misspellings seen in the live feed (city is hand-entered). Keep these so
+    # real Anchorage sites aren't silently dropped from scope.
+    "anchroage", "anchorage ", "ancorage",
+}
+
+# Correct obvious city typos for DISPLAY only (the feed is hand-entered). Scope
+# matching tolerates these regardless via the entries above.
+CITY_FIXES = {
+    "anchroage": "Anchorage",
+    "ancorage": "Anchorage",
+    "anchorage ": "Anchorage",
 }
 
 OFFICIAL_FINDER = "https://www.fns.usda.gov/sfsp/sitefinder"
 STATE_AGENCY = "https://education.alaska.gov/cnp"  # AK Child Nutrition Programs
 HUNGER_HOTLINE = "1-866-348-6479"
 
-OUTFIELDS = ",".join([
+# Fields we want, all site-level and safe. We deliberately do NOT request the
+# personal contact name/phone columns (Contact_First_Name, Contact_Last_Name,
+# Contact_Phone, Ext) so PII never enters the build.
+#
+# The fetch intersects this list with the fields the live layer actually
+# exposes, because ArcGIS returns ZERO features if you ask for a field that
+# does not exist. Meal-time and season-date columns have drifted between
+# seasons (e.g. "Lunch_Time" vs "Lunch_Time2", "StartDateText" vs the epoch
+# "Start_date"), so we request every known variant and let normalize() pick the
+# first populated one.
+DESIRED_FIELDS = [
     "Site_Name", "Site_Address1", "Site_Address2", "Site_City", "Site_State",
     "Site_Zip", "Site_Phone", "Sponsoring_Organization", "Service_Model",
-    "Days_of_operation", "Breakfast_Time", "Lunch_Time", "Snack_Time_AM",
-    "Snack_Time_PM", "Dinner_Supper_Time", "StartDateText", "EndDateText",
-    "End_date", "Comments", "RecordStatus", "Site_Location",
-])
+    "Site_Type", "Days_of_operation", "Comments", "RecordStatus",
+    "Site_Location",
+    "Breakfast_Time", "Lunch_Time", "Snack_Time_AM", "Snack_Time_PM",
+    "Dinner_Supper_Time",
+    "Breakfast_Time2", "Lunch_Time2", "Snack_Time_AM2", "Snack_Time_PM2",
+    "Dinner_Supper_Time2",
+    "StartDateText", "EndDateText", "Start_date", "End_date",
+]
 
+# Each meal: a display label plus the candidate field names to try, in order.
 MEAL_FIELDS = [
-    ("Breakfast_Time", "Breakfast"),
-    ("Lunch_Time", "Lunch"),
-    ("Snack_Time_AM", "Morning snack"),
-    ("Snack_Time_PM", "Afternoon snack"),
-    ("Dinner_Supper_Time", "Dinner"),
+    (("Breakfast_Time", "Breakfast_Time2"), "Breakfast"),
+    (("Lunch_Time", "Lunch_Time2"), "Lunch"),
+    (("Snack_Time_AM", "Snack_Time_AM2"), "Morning snack"),
+    (("Snack_Time_PM", "Snack_Time_PM2"), "Afternoon snack"),
+    (("Dinner_Supper_Time", "Dinner_Supper_Time2"), "Dinner"),
 ]
 
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday",
              "Friday", "Saturday", "Sunday"]
+DAY_ABBR = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+# Compact day codes used by the live feed, e.g. "M,T,W,TH,F" or "SA".
+# Order of checking matters when these are matched as whole comma-separated
+# tokens: "TH" is Thursday (not Tuesday), "SA"/"SU" are the weekend.
+DAY_CODES = {
+    "m": 0, "mo": 0,
+    "t": 1, "tu": 1,
+    "w": 2, "we": 2,
+    "th": 3, "r": 3,
+    "f": 4,
+    "sa": 5,
+    "su": 6,
+}
 
 ABBR = {
     "monday": 0, "mon": 0,
@@ -97,6 +140,27 @@ _DAYWORD = (r"monday|tuesday|wednesday|thursday|friday|saturday|sunday"
 # DATA FETCH
 # --------------------------------------------------------------------------
 
+UA = {"User-Agent": "anchorage-summer-meals/1.0"}
+
+
+def _get_json(url):
+    req = Request(url, headers=UA)
+    with urlopen(req, timeout=60) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    if isinstance(data, dict) and "error" in data:
+        raise RuntimeError(f"ArcGIS error: {data['error']}")
+    return data
+
+
+def available_fields():
+    """Field names the live layer exposes (the layer URL is SERVICE_URL minus
+    the trailing '/query'). Used to avoid requesting a field that doesn't exist
+    -- ArcGIS returns zero features if any requested outField is unknown."""
+    layer_url = re.sub(r"/query/?$", "", SERVICE_URL)
+    meta = _get_json(layer_url + "?f=json")
+    return {f["name"] for f in meta.get("fields", [])}
+
+
 def fetch_records():
     """Return a list of attribute dicts, paging through transfer limits."""
     mock = os.environ.get("MOCK_DATA")
@@ -105,9 +169,16 @@ def fetch_records():
             payload = json.load(fh)
         return [f["attributes"] for f in payload.get("features", [])]
 
+    have = available_fields()
+    fields = [f for f in DESIRED_FIELDS if f in have]
+    if "Site_State" not in have or "Site_City" not in have:
+        raise RuntimeError(
+            "Service is missing expected fields (Site_State/Site_City). "
+            f"Got: {sorted(have)[:20]}... -- check SERVICE_URL.")
+
     base = {
         "where": "Site_State='AK'",
-        "outFields": OUTFIELDS,
+        "outFields": ",".join(fields),
         "returnGeometry": "false",
         "orderByFields": "Site_Name",
         "resultRecordCount": "2000",
@@ -116,12 +187,7 @@ def fetch_records():
     out, offset = [], 0
     while True:
         params = dict(base, resultOffset=str(offset))
-        url = SERVICE_URL + "?" + urlencode(params)
-        req = Request(url, headers={"User-Agent": "anchorage-summer-meals/1.0"})
-        with urlopen(req, timeout=60) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        if "error" in data:
-            raise RuntimeError(f"ArcGIS error: {data['error']}")
+        data = _get_json(SERVICE_URL + "?" + urlencode(params))
         feats = data.get("features", [])
         out.extend(f["attributes"] for f in feats)
         if data.get("exceededTransferLimit") and feats:
@@ -168,20 +234,58 @@ def parse_days(text):
         result.update({0, 2, 4})
     if re.search(r"\b(tth|t/th|t-th)\b", t):
         result.update({1, 3})
+    # Compact comma/slash-separated letter codes: "M,T,W,TH,F", "SA", "M/W/F".
+    # Only whole tokens are matched (split on separators) so day words handled
+    # above aren't double-counted and stray letters in prose can't leak in.
+    for tok in re.split(r"[,/;|]+", t):
+        tok = tok.strip().strip(".").replace(" ", "")
+        if tok in DAY_CODES:
+            result.add(DAY_CODES[tok])
     return result
+
+
+def format_days(days, raw):
+    """Human-readable day list from a parsed set, collapsing runs into ranges
+    like 'Mon–Fri'. Falls back to the raw feed text if nothing parsed."""
+    if not days:
+        return raw
+    idxs = sorted(days)
+    runs, start, prev = [], idxs[0], idxs[0]
+    for i in idxs[1:]:
+        if i == prev + 1:
+            prev = i
+            continue
+        runs.append((start, prev))
+        start = prev = i
+    runs.append((start, prev))
+    parts = []
+    for a, b in runs:
+        if a == b:
+            parts.append(DAY_ABBR[a])
+        elif b == a + 1:
+            parts.append(DAY_ABBR[a])
+            parts.append(DAY_ABBR[b])
+        else:
+            parts.append(f"{DAY_ABBR[a]}–{DAY_ABBR[b]}")
+    return ", ".join(parts)
 
 
 def parse_text_date(s, today):
     if not s:
         return None
     s = s.strip()
-    for fmt in ("%m/%d/%Y", "%m/%d/%y", "%B %d, %Y", "%b %d, %Y",
-                "%B %d %Y", "%b %d %Y", "%m-%d-%Y", "%Y-%m-%d", "%m/%d"):
+    # Bare "M/D" with no year: attach the current year explicitly (avoids the
+    # ambiguous-default-year deprecation in Python 3.14+).
+    m = re.fullmatch(r"(\d{1,2})/(\d{1,2})", s)
+    if m:
         try:
-            d = datetime.strptime(s, fmt)
-            if fmt == "%m/%d":
-                d = d.replace(year=today.year)
-            return d.date()
+            return date(today.year, int(m.group(1)), int(m.group(2)))
+        except ValueError:
+            return None
+    for fmt in ("%m/%d/%Y", "%m/%d/%y", "%B %d, %Y", "%b %d, %Y",
+                "%B %d %Y", "%b %d %Y", "%m-%d-%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s, fmt).date()
         except ValueError:
             continue
     return None
@@ -208,8 +312,57 @@ def clean(s):
 # RECORD NORMALIZATION
 # --------------------------------------------------------------------------
 
+def fmt_date(d):
+    """Short, locale-independent date text (e.g. 'Jun 2'). Year omitted."""
+    return f"{d:%b} {d.day}" if d else ""
+
+
+def model_info(raw_model):
+    """Map a Service_Model value to (display_label, css_class).
+
+    The live feed uses 'CONGREGATE' / 'NON-CONGREGATE PICK UP'; older sample
+    data uses 'Eat On-Site' / 'Meals To Go'. We normalize both to friendly,
+    plain-language labels and a tag class. Empty -> ("", "")."""
+    m = clean(raw_model)
+    if not m:
+        return "", ""
+    low = m.lower()
+    # Check to-go first: "NON-CONGREGATE" contains the substring "congregate".
+    if any(k in low for k in ("non-congregate", "non congregate", "to go",
+                              "to-go", "pick up", "pick-up", "pickup", "grab")):
+        return "Grab & go / pick-up", "togo"
+    if any(k in low for k in ("congregate", "on-site", "on site", "eat")):
+        return "Eat on-site", "onsite"
+    return m, "onsite"
+
+
+def first_value(raw, fields):
+    """First non-empty cleaned value among candidate field names."""
+    for f in fields:
+        v = clean(raw.get(f))
+        if v:
+            return v
+    return ""
+
+
 def normalize(raw, today):
     city = clean(raw.get("Site_City"))
+    city = CITY_FIXES.get(city.lower(), city)
+    model_label, model_cls = model_info(clean(raw.get("Service_Model")))
+    days_raw = clean(raw.get("Days_of_operation"))
+    days = parse_days(days_raw)
+
+    start_text = clean(raw.get("StartDateText"))
+    end_text = clean(raw.get("EndDateText"))
+    start_date = (parse_text_date(start_text, today)
+                  or parse_epoch_date(raw.get("Start_date")))
+    end_date = (parse_epoch_date(raw.get("End_date"))
+                or parse_text_date(end_text, today))
+    if not start_text and start_date:
+        start_text = fmt_date(start_date)
+    if not end_text and end_date:
+        end_text = fmt_date(end_date)
+
     rec = {
         "name": clean(raw.get("Site_Name")) or "Summer meal site",
         "addr1": clean(raw.get("Site_Address1")),
@@ -218,19 +371,20 @@ def normalize(raw, today):
         "zip": clean(raw.get("Site_Zip")),
         "phone": clean(raw.get("Site_Phone")),
         "sponsor": clean(raw.get("Sponsoring_Organization")),
-        "model": clean(raw.get("Service_Model")),
-        "days_raw": clean(raw.get("Days_of_operation")),
+        "model": model_label,
+        "model_class": model_cls,
+        "days_raw": days_raw,
+        "days_display": format_days(days, days_raw),
         "comments": clean(raw.get("Comments")),
         "location_note": clean(raw.get("Site_Location")),
-        "start_text": clean(raw.get("StartDateText")),
-        "end_text": clean(raw.get("EndDateText")),
+        "start_text": start_text,
+        "end_text": end_text,
     }
-    rec["meals"] = [(label, clean(raw.get(f)))
-                    for f, label in MEAL_FIELDS if clean(raw.get(f))]
-    rec["days"] = parse_days(rec["days_raw"])
-    rec["start_date"] = parse_text_date(rec["start_text"], today)
-    rec["end_date"] = (parse_epoch_date(raw.get("End_date"))
-                       or parse_text_date(rec["end_text"], today))
+    rec["meals"] = [(lbl, first_value(raw, fields))
+                    for fields, lbl in MEAL_FIELDS if first_value(raw, fields)]
+    rec["days"] = days
+    rec["start_date"] = start_date
+    rec["end_date"] = end_date
     return rec
 
 
@@ -368,7 +522,7 @@ footer p{margin:8px 0}
 
 
 def render_site(rec, level):
-    tag_cls = "togo" if "to go" in rec["model"].lower() or "to-go" in rec["model"].lower() else "onsite"
+    tag_cls = rec["model_class"] or "onsite"
     parts = [f'<article class="site">']
     parts.append(f'<h{level} class="name">{esc(rec["name"])}</h{level}>')
     if rec["model"]:
@@ -378,8 +532,8 @@ def render_site(rec, level):
         parts.append(f'<address>{esc(addr)}</address>')
     if rec["location_note"]:
         parts.append(f'<p class="row">{esc(rec["location_note"])}</p>')
-    if rec["days_raw"]:
-        parts.append(f'<p class="row"><span class="lbl">Open:</span> {esc(rec["days_raw"])}</p>')
+    if rec["days_display"]:
+        parts.append(f'<p class="row"><span class="lbl">Open:</span> {esc(rec["days_display"])}</p>')
     if rec["meals"]:
         items = "".join(f'<li>{esc(lbl)}: {esc(val)}</li>' for lbl, val in rec["meals"])
         parts.append(f'<ul class="meals">{items}</ul>')
@@ -511,8 +665,8 @@ def render_text(today, today_idx, today_sites, by_day, varies, upcoming, stamp):
         meta = []
         if r["model"]:
             meta.append(r["model"])
-        if r["days_raw"]:
-            meta.append("Open: " + r["days_raw"])
+        if r["days_display"]:
+            meta.append("Open: " + r["days_display"])
         if meta:
             out.append(indent + " | ".join(meta))
         for lbl, val in r["meals"]:

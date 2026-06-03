@@ -1,58 +1,28 @@
 [
   {
-    "name": "Mountain View Lions Park",
-    "addr1": "3543 Mountain View Dr",
+    "name": "Bartlett High School",
+    "addr1": "1101 Golden Bear Drive",
     "addr2": "",
     "city": "Anchorage",
-    "zip": "99508",
-    "phone": "907-343-4474",
-    "sponsor": "Anchorage Parks & Recreation",
-    "model": "Eat On-Site",
-    "days_raw": "Monday - Friday",
-    "comments": "Meals served in the park shelter.",
-    "location_note": "",
-    "start_text": "6/2/2026",
-    "end_text": "8/8/2026",
-    "meals": [
-      [
-        "Lunch",
-        "12:00 PM - 1:00 PM"
-      ],
-      [
-        "Afternoon snack",
-        "3:00 PM - 3:30 PM"
-      ]
-    ],
-    "days": [
-      0,
-      1,
-      2,
-      3,
-      4
-    ]
-  },
-  {
-    "name": "Fairview Recreation Center",
-    "addr1": "1121 E 10th Ave",
-    "addr2": "",
-    "city": "Anchorage",
-    "zip": "99501",
-    "phone": "9073434130",
-    "sponsor": "",
-    "model": "Eat On-Site",
-    "days_raw": "Mon-Fri",
+    "zip": "99504",
+    "phone": "(907) 742-1898",
+    "sponsor": "Anchorage School District",
+    "model": "Eat on-site",
+    "model_class": "onsite",
+    "days_raw": "M,T,W,TH,F",
+    "days_display": "Mon\u2013Fri",
     "comments": "",
-    "location_note": "",
-    "start_text": "6/2/2026",
-    "end_text": "8/15/2026",
+    "location_note": "Fixed",
+    "start_text": "Jun 1",
+    "end_text": "Jun 11",
     "meals": [
       [
         "Breakfast",
-        "8:30 AM - 9:30 AM"
+        "8:30-9:30"
       ],
       [
         "Lunch",
-        "12:00 PM - 1:00 PM"
+        "12:30-1:30"
       ]
     ],
     "days": [
@@ -64,114 +34,194 @@
     ]
   },
   {
-    "name": "Clark Middle School",
-    "addr1": "150 Bragaw St",
+    "name": "Bettye Davis East Anchorage High School",
+    "addr1": "4025 E Northern Lights Boulevard",
     "addr2": "",
     "city": "Anchorage",
     "zip": "99508",
-    "phone": "907-742-3000",
-    "sponsor": "",
-    "model": "Eat On-Site",
-    "days_raw": "Tuesday, Thursday",
+    "phone": "(907) 742-2146",
+    "sponsor": "Anchorage School District",
+    "model": "Eat on-site",
+    "model_class": "onsite",
+    "days_raw": "M,T,W,TH,F",
+    "days_display": "Mon\u2013Fri",
     "comments": "",
-    "location_note": "",
-    "start_text": "6/3/2026",
-    "end_text": "7/31/2026",
+    "location_note": "Fixed",
+    "start_text": "May 27",
+    "end_text": "Jun 9",
     "meals": [
       [
+        "Breakfast",
+        "8:30-9:30"
+      ],
+      [
         "Lunch",
-        "11:30 AM - 12:30 PM"
+        "12:30-1:30"
       ]
     ],
     "days": [
+      0,
       1,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "name": "Dimond High School",
+    "addr1": "2909 W 88th ave",
+    "addr2": "",
+    "city": "Anchorage",
+    "zip": "99502",
+    "phone": "(907) 742-7012",
+    "sponsor": "Anchorage School District",
+    "model": "Eat on-site",
+    "model_class": "onsite",
+    "days_raw": "M,T,W,TH,F",
+    "days_display": "Mon\u2013Fri",
+    "comments": "",
+    "location_note": "Fixed",
+    "start_text": "Jun 1",
+    "end_text": "Jun 11",
+    "meals": [
+      [
+        "Breakfast",
+        "8:30-9:30"
+      ],
+      [
+        "Lunch",
+        "12:30-1:30"
+      ]
+    ],
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "name": "Nicholas J. Begich Middle School",
+    "addr1": "7440 Creekside Center Drive",
+    "addr2": "",
+    "city": "Anchorage",
+    "zip": "99504",
+    "phone": "(907) 742-0500",
+    "sponsor": "Anchorage School District",
+    "model": "Eat on-site",
+    "model_class": "onsite",
+    "days_raw": "M,T,W,TH,F",
+    "days_display": "Mon\u2013Fri",
+    "comments": "No meal service on June 19th.",
+    "location_note": "Fixed",
+    "start_text": "May 28",
+    "end_text": "Jun 25",
+    "meals": [
+      [
+        "Breakfast",
+        "8:00-9:00"
+      ],
+      [
+        "Lunch",
+        "11:30-1:00"
+      ]
+    ],
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "name": "North Star Elementary",
+    "addr1": "605 W. Fireweed Lane",
+    "addr2": "",
+    "city": "Anchorage",
+    "zip": "99503",
+    "phone": "(907) 742-3815",
+    "sponsor": "Anchorage School District",
+    "model": "Eat on-site",
+    "model_class": "onsite",
+    "days_raw": "M,T,W,TH,F",
+    "days_display": "Mon\u2013Fri",
+    "comments": "Closed June 19th.",
+    "location_note": "Fixed",
+    "start_text": "Jun 1",
+    "end_text": "Jun 26",
+    "meals": [
+      [
+        "Breakfast",
+        "8:00-9:00"
+      ],
+      [
+        "Lunch",
+        "1:00-1:45"
+      ]
+    ],
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "name": "Russian Jack Elementary",
+    "addr1": "4300 E 20th ave",
+    "addr2": "",
+    "city": "Anchorage",
+    "zip": "99508",
+    "phone": "(907) 742-1300",
+    "sponsor": "Anchorage School District",
+    "model": "Eat on-site",
+    "model_class": "onsite",
+    "days_raw": "M,T,W,TH",
+    "days_display": "Mon\u2013Thu",
+    "comments": "",
+    "location_note": "Fixed",
+    "start_text": "Jun 1",
+    "end_text": "Jun 25",
+    "meals": [
+      [
+        "Breakfast",
+        "8:00-9:00"
+      ],
+      [
+        "Lunch",
+        "12:00-1:45"
+      ]
+    ],
+    "days": [
+      0,
+      1,
+      2,
       3
     ]
   },
   {
-    "name": "Muldoon Library Grab-and-Go",
-    "addr1": "1251 Muldoon Rd",
+    "name": "Wendler Middle School",
+    "addr1": "2905 Lake Otis Parkway",
     "addr2": "",
     "city": "Anchorage",
-    "zip": "99504",
-    "phone": "907-343-4223",
-    "sponsor": "",
-    "model": "Meals To Go",
-    "days_raw": "Wednesday",
-    "comments": "Multi-day meal packs available.",
-    "location_note": "",
-    "start_text": "6/3/2026",
-    "end_text": "8/12/2026",
+    "zip": "99508",
+    "phone": "(907) 720-3380",
+    "sponsor": "Anchorage School District",
+    "model": "Eat on-site",
+    "model_class": "onsite",
+    "days_raw": "M,T,W,TH,F",
+    "days_display": "Mon\u2013Fri",
+    "comments": "Outdoor site. Closed June 19th.",
+    "location_note": "Fixed",
+    "start_text": "Jun 2",
+    "end_text": "Jun 26",
     "meals": [
       [
         "Lunch",
-        "Pick up 11:00 AM - 1:00 PM"
-      ]
-    ],
-    "days": [
-      2
-    ]
-  },
-  {
-    "name": "Spenard Community Recreation Center",
-    "addr1": "2020 W 48th Ave",
-    "addr2": "",
-    "city": "Anchorage",
-    "zip": "99517",
-    "phone": "907-343-4160",
-    "sponsor": "",
-    "model": "Eat On-Site",
-    "days_raw": "Daily",
-    "comments": "",
-    "location_note": "",
-    "start_text": "6/1/2026",
-    "end_text": "8/16/2026",
-    "meals": [
-      [
-        "Breakfast",
-        "8:00 AM - 9:00 AM"
-      ],
-      [
-        "Lunch",
-        "12:00 PM - 1:00 PM"
-      ],
-      [
-        "Dinner",
-        "5:00 PM - 6:00 PM"
-      ]
-    ],
-    "days": [
-      0,
-      1,
-      2,
-      3,
-      4,
-      5,
-      6
-    ]
-  },
-  {
-    "name": "Eagle River Boys & Girls Club",
-    "addr1": "12001 Business Blvd",
-    "addr2": "",
-    "city": "Eagle River",
-    "zip": "99577",
-    "phone": "907-694-4118",
-    "sponsor": "",
-    "model": "Eat On-Site",
-    "days_raw": "Monday through Friday",
-    "comments": "",
-    "location_note": "",
-    "start_text": "6/2/2026",
-    "end_text": "8/8/2026",
-    "meals": [
-      [
-        "Lunch",
-        "11:45 AM - 12:45 PM"
-      ],
-      [
-        "Afternoon snack",
-        "3:30 PM - 4:00 PM"
+        "11:45-12:45"
       ]
     ],
     "days": [
@@ -183,20 +233,37 @@
     ]
   },
   {
-    "name": "Northway Mall Summer Pop-Up",
-    "addr1": "3101 Penland Pkwy",
+    "name": "West High School",
+    "addr1": "1700 Hillcrest Drive",
     "addr2": "",
     "city": "Anchorage",
-    "zip": "99508",
-    "phone": "",
-    "sponsor": "",
-    "model": "Meals To Go",
-    "days_raw": "Call for schedule",
-    "comments": "Hours vary week to week.",
-    "location_note": "",
-    "start_text": "6/2/2026",
-    "end_text": "8/15/2026",
-    "meals": [],
-    "days": []
+    "zip": "99517",
+    "phone": "(907) 742-2509",
+    "sponsor": "Anchorage School District",
+    "model": "Eat on-site",
+    "model_class": "onsite",
+    "days_raw": "M,T,W,TH,F",
+    "days_display": "Mon\u2013Fri",
+    "comments": "",
+    "location_note": "Fixed",
+    "start_text": "May 26",
+    "end_text": "Jun 5",
+    "meals": [
+      [
+        "Breakfast",
+        "8:30-9:30"
+      ],
+      [
+        "Lunch",
+        "12:30-1:30"
+      ]
+    ],
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
   }
 ]
