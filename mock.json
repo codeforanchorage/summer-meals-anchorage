@@ -1,0 +1,95 @@
+{
+  "features": [
+    {"attributes": {
+      "Site_Name": "Mountain View Lions Park",
+      "Site_Address1": "3543 Mountain View Dr", "Site_City": "Anchorage",
+      "Site_State": "AK", "Site_Zip": "99508", "Site_Phone": "907-343-4474",
+      "Sponsoring_Organization": "Anchorage Parks & Recreation",
+      "Service_Model": "Eat On-Site", "Days_of_operation": "Monday - Friday",
+      "Lunch_Time": "12:00 PM - 1:00 PM", "Snack_Time_PM": "3:00 PM - 3:30 PM",
+      "StartDateText": "6/2/2026", "EndDateText": "8/8/2026",
+      "Comments": "Meals served in the park shelter."
+    }},
+    {"attributes": {
+      "Site_Name": "Fairview Recreation Center",
+      "Site_Address1": "1121 E 10th Ave", "Site_City": "Anchorage",
+      "Site_State": "AK", "Site_Zip": "99501", "Site_Phone": "9073434130",
+      "Service_Model": "Eat On-Site", "Days_of_operation": "Mon-Fri",
+      "Breakfast_Time": "8:30 AM - 9:30 AM", "Lunch_Time": "12:00 PM - 1:00 PM",
+      "StartDateText": "6/2/2026", "EndDateText": "8/15/2026"
+    }},
+    {"attributes": {
+      "Site_Name": "Clark Middle School",
+      "Site_Address1": "150 Bragaw St", "Site_City": "Anchorage",
+      "Site_State": "AK", "Site_Zip": "99508", "Site_Phone": "907-742-3000",
+      "Service_Model": "Eat On-Site", "Days_of_operation": "Tuesday, Thursday",
+      "Lunch_Time": "11:30 AM - 12:30 PM",
+      "StartDateText": "6/3/2026", "EndDateText": "7/31/2026"
+    }},
+    {"attributes": {
+      "Site_Name": "Muldoon Library Grab-and-Go",
+      "Site_Address1": "1251 Muldoon Rd", "Site_City": "Anchorage",
+      "Site_State": "AK", "Site_Zip": "99504", "Site_Phone": "907-343-4223",
+      "Service_Model": "Meals To Go", "Days_of_operation": "Wednesday",
+      "Lunch_Time": "Pick up 11:00 AM - 1:00 PM",
+      "Comments": "Multi-day meal packs available.",
+      "StartDateText": "6/3/2026", "EndDateText": "8/12/2026"
+    }},
+    {"attributes": {
+      "Site_Name": "Spenard Community Recreation Center",
+      "Site_Address1": "2020 W 48th Ave", "Site_City": "Anchorage",
+      "Site_State": "AK", "Site_Zip": "99517", "Site_Phone": "907-343-4160",
+      "Service_Model": "Eat On-Site", "Days_of_operation": "Daily",
+      "Breakfast_Time": "8:00 AM - 9:00 AM", "Lunch_Time": "12:00 PM - 1:00 PM",
+      "Dinner_Supper_Time": "5:00 PM - 6:00 PM",
+      "StartDateText": "6/1/2026", "EndDateText": "8/16/2026"
+    }},
+    {"attributes": {
+      "Site_Name": "Chanshtnu Muldoon Park",
+      "Site_Address1": "1301 Muldoon Rd", "Site_City": "Anchorage",
+      "Site_State": "AK", "Site_Zip": "99504",
+      "Service_Model": "Eat On-Site", "Days_of_operation": "Saturday, Sunday",
+      "Lunch_Time": "12:00 PM - 1:00 PM",
+      "StartDateText": "6/6/2026", "EndDateText": "8/9/2026"
+    }},
+    {"attributes": {
+      "Site_Name": "Eagle River Boys & Girls Club",
+      "Site_Address1": "12001 Business Blvd", "Site_City": "Eagle River",
+      "Site_State": "AK", "Site_Zip": "99577", "Site_Phone": "907-694-4118",
+      "Service_Model": "Eat On-Site", "Days_of_operation": "Monday through Friday",
+      "Lunch_Time": "11:45 AM - 12:45 PM", "Snack_Time_PM": "3:30 PM - 4:00 PM",
+      "StartDateText": "6/2/2026", "EndDateText": "8/8/2026"
+    }},
+    {"attributes": {
+      "Site_Name": "Northway Mall Summer Pop-Up",
+      "Site_Address1": "3101 Penland Pkwy", "Site_City": "Anchorage",
+      "Site_State": "AK", "Site_Zip": "99508",
+      "Service_Model": "Meals To Go", "Days_of_operation": "Call for schedule",
+      "Comments": "Hours vary week to week.",
+      "StartDateText": "6/2/2026", "EndDateText": "8/15/2026"
+    }},
+    {"attributes": {
+      "Site_Name": "Girdwood School (opens later)",
+      "Site_Address1": "250 Egloff Dr", "Site_City": "Girdwood",
+      "Site_State": "AK", "Site_Zip": "99587",
+      "Service_Model": "Eat On-Site", "Days_of_operation": "Mon-Fri",
+      "Lunch_Time": "12:00 PM - 1:00 PM",
+      "StartDateText": "6/15/2026", "EndDateText": "8/1/2026"
+    }},
+    {"attributes": {
+      "Site_Name": "Closed Test Site (should not appear)",
+      "Site_Address1": "1 Old Rd", "Site_City": "Anchorage",
+      "Site_State": "AK", "Site_Zip": "99501",
+      "Service_Model": "Eat On-Site", "Days_of_operation": "Mon-Fri",
+      "StartDateText": "6/1/2025", "EndDateText": "8/1/2025"
+    }},
+    {"attributes": {
+      "Site_Name": "Wasilla Site (out of scope)",
+      "Site_Address1": "500 N Main St", "Site_City": "Wasilla",
+      "Site_State": "AK", "Site_Zip": "99654",
+      "Service_Model": "Eat On-Site", "Days_of_operation": "Mon-Fri",
+      "Lunch_Time": "12:00 PM - 1:00 PM",
+      "StartDateText": "6/2/2026", "EndDateText": "8/8/2026"
+    }}
+  ]
+}

@@ -1,0 +1,202 @@
+[
+  {
+    "name": "Mountain View Lions Park",
+    "addr1": "3543 Mountain View Dr",
+    "addr2": "",
+    "city": "Anchorage",
+    "zip": "99508",
+    "phone": "907-343-4474",
+    "sponsor": "Anchorage Parks & Recreation",
+    "model": "Eat On-Site",
+    "days_raw": "Monday - Friday",
+    "comments": "Meals served in the park shelter.",
+    "location_note": "",
+    "start_text": "6/2/2026",
+    "end_text": "8/8/2026",
+    "meals": [
+      [
+        "Lunch",
+        "12:00 PM - 1:00 PM"
+      ],
+      [
+        "Afternoon snack",
+        "3:00 PM - 3:30 PM"
+      ]
+    ],
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "name": "Fairview Recreation Center",
+    "addr1": "1121 E 10th Ave",
+    "addr2": "",
+    "city": "Anchorage",
+    "zip": "99501",
+    "phone": "9073434130",
+    "sponsor": "",
+    "model": "Eat On-Site",
+    "days_raw": "Mon-Fri",
+    "comments": "",
+    "location_note": "",
+    "start_text": "6/2/2026",
+    "end_text": "8/15/2026",
+    "meals": [
+      [
+        "Breakfast",
+        "8:30 AM - 9:30 AM"
+      ],
+      [
+        "Lunch",
+        "12:00 PM - 1:00 PM"
+      ]
+    ],
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "name": "Clark Middle School",
+    "addr1": "150 Bragaw St",
+    "addr2": "",
+    "city": "Anchorage",
+    "zip": "99508",
+    "phone": "907-742-3000",
+    "sponsor": "",
+    "model": "Eat On-Site",
+    "days_raw": "Tuesday, Thursday",
+    "comments": "",
+    "location_note": "",
+    "start_text": "6/3/2026",
+    "end_text": "7/31/2026",
+    "meals": [
+      [
+        "Lunch",
+        "11:30 AM - 12:30 PM"
+      ]
+    ],
+    "days": [
+      1,
+      3
+    ]
+  },
+  {
+    "name": "Muldoon Library Grab-and-Go",
+    "addr1": "1251 Muldoon Rd",
+    "addr2": "",
+    "city": "Anchorage",
+    "zip": "99504",
+    "phone": "907-343-4223",
+    "sponsor": "",
+    "model": "Meals To Go",
+    "days_raw": "Wednesday",
+    "comments": "Multi-day meal packs available.",
+    "location_note": "",
+    "start_text": "6/3/2026",
+    "end_text": "8/12/2026",
+    "meals": [
+      [
+        "Lunch",
+        "Pick up 11:00 AM - 1:00 PM"
+      ]
+    ],
+    "days": [
+      2
+    ]
+  },
+  {
+    "name": "Spenard Community Recreation Center",
+    "addr1": "2020 W 48th Ave",
+    "addr2": "",
+    "city": "Anchorage",
+    "zip": "99517",
+    "phone": "907-343-4160",
+    "sponsor": "",
+    "model": "Eat On-Site",
+    "days_raw": "Daily",
+    "comments": "",
+    "location_note": "",
+    "start_text": "6/1/2026",
+    "end_text": "8/16/2026",
+    "meals": [
+      [
+        "Breakfast",
+        "8:00 AM - 9:00 AM"
+      ],
+      [
+        "Lunch",
+        "12:00 PM - 1:00 PM"
+      ],
+      [
+        "Dinner",
+        "5:00 PM - 6:00 PM"
+      ]
+    ],
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  {
+    "name": "Eagle River Boys & Girls Club",
+    "addr1": "12001 Business Blvd",
+    "addr2": "",
+    "city": "Eagle River",
+    "zip": "99577",
+    "phone": "907-694-4118",
+    "sponsor": "",
+    "model": "Eat On-Site",
+    "days_raw": "Monday through Friday",
+    "comments": "",
+    "location_note": "",
+    "start_text": "6/2/2026",
+    "end_text": "8/8/2026",
+    "meals": [
+      [
+        "Lunch",
+        "11:45 AM - 12:45 PM"
+      ],
+      [
+        "Afternoon snack",
+        "3:30 PM - 4:00 PM"
+      ]
+    ],
+    "days": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "name": "Northway Mall Summer Pop-Up",
+    "addr1": "3101 Penland Pkwy",
+    "addr2": "",
+    "city": "Anchorage",
+    "zip": "99508",
+    "phone": "",
+    "sponsor": "",
+    "model": "Meals To Go",
+    "days_raw": "Call for schedule",
+    "comments": "Hours vary week to week.",
+    "location_note": "",
+    "start_text": "6/2/2026",
+    "end_text": "8/15/2026",
+    "meals": [],
+    "days": []
+  }
+]
