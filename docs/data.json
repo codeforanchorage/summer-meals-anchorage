@@ -12,7 +12,7 @@
     "days_raw": "M,T,W,TH,F",
     "days_display": "Mon\u2013Fri",
     "comments": "",
-    "location_note": "Fixed",
+    "location_note": "",
     "start_text": "Jun 1",
     "end_text": "Jun 11",
     "meals": [
@@ -46,7 +46,7 @@
     "days_raw": "M,T,W,TH,F",
     "days_display": "Mon\u2013Fri",
     "comments": "",
-    "location_note": "Fixed",
+    "location_note": "",
     "start_text": "May 27",
     "end_text": "Jun 9",
     "meals": [
@@ -80,7 +80,7 @@
     "days_raw": "M,T,W,TH,F",
     "days_display": "Mon\u2013Fri",
     "comments": "",
-    "location_note": "Fixed",
+    "location_note": "",
     "start_text": "Jun 1",
     "end_text": "Jun 11",
     "meals": [
@@ -114,7 +114,7 @@
     "days_raw": "M,T,W,TH,F",
     "days_display": "Mon\u2013Fri",
     "comments": "No meal service on June 19th.",
-    "location_note": "Fixed",
+    "location_note": "",
     "start_text": "May 28",
     "end_text": "Jun 25",
     "meals": [
@@ -148,7 +148,7 @@
     "days_raw": "M,T,W,TH,F",
     "days_display": "Mon\u2013Fri",
     "comments": "Closed June 19th.",
-    "location_note": "Fixed",
+    "location_note": "",
     "start_text": "Jun 1",
     "end_text": "Jun 26",
     "meals": [
@@ -182,7 +182,7 @@
     "days_raw": "M,T,W,TH",
     "days_display": "Mon\u2013Thu",
     "comments": "",
-    "location_note": "Fixed",
+    "location_note": "",
     "start_text": "Jun 1",
     "end_text": "Jun 25",
     "meals": [
@@ -215,7 +215,7 @@
     "days_raw": "M,T,W,TH,F",
     "days_display": "Mon\u2013Fri",
     "comments": "Outdoor site. Closed June 19th.",
-    "location_note": "Fixed",
+    "location_note": "",
     "start_text": "Jun 2",
     "end_text": "Jun 26",
     "meals": [
@@ -245,7 +245,7 @@
     "days_raw": "M,T,W,TH,F",
     "days_display": "Mon\u2013Fri",
     "comments": "",
-    "location_note": "Fixed",
+    "location_note": "",
     "start_text": "May 26",
     "end_text": "Jun 5",
     "meals": [

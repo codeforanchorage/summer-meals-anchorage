@@ -1,0 +1,19 @@
+{
+  "name": "summer-meals-anchorage-devtools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Dev-only tooling for the Anchorage Summer Meals page (accessibility audits + asset generation). The runtime build is generate.py, which is standard-library Python only and uses none of these.",
+  "type": "module",
+  "scripts": {
+    "make-assets": "node tools/make-assets.mjs",
+    "validate": "html-validate docs/index.html docs/es/index.html docs/hmn/index.html docs/sm/index.html docs/tl/index.html",
+    "a11y": "pa11y --standard WCAG2AA --runner axe --runner htmlcs http://localhost:8000/",
+    "serve": "python -m http.server -d docs 8000"
+  },
+  "devDependencies": {
+    "html-validate": "^9",
+    "pa11y": "^8",
+    "png-to-ico": "^2",
+    "puppeteer": "^24"
+  }
+}
